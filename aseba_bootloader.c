@@ -89,6 +89,7 @@ int aseba_cmd_exec(aseba_bootloader_context_t *ctx, uint16_t cmd, uint16_t *payl
 {
     switch (cmd) {
     case ASEBA_CMD_RESET:
+        aseba_reply(ASEBA_REPLY_OK);
         uart_puts("jumping to application\n");
         reboot_to_application();
         break;
