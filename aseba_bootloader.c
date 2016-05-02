@@ -107,7 +107,8 @@ int aseba_cmd_exec(aseba_bootloader_context_t *ctx, uint16_t cmd, uint16_t *payl
             aseba_reply(ASEBA_REPLY_INVALID_SIZE);
             return -1;
         }
-        int page_nbr = payload[0];
+        int page_nbr = payload[0] - ASEBA_FIRST_PAGE;
+
         if (page_nbr > ASEBA_AVAILABLE_PAGES) {
             aseba_reply(ASEBA_REPLY_INVALID_VALUE);
             return -1;
@@ -149,7 +150,7 @@ void aseba_send_descr(void)
     uint16_t msg[4];
     msg[0] = ASEBA_PUSH_DESCRIPTION;
     msg[1] = ASEBA_PAGE_SIZE; // page size
-    msg[2] = 0; // page start
+    msg[2] = ASEBA_FIRST_PAGE; // page start
     msg[3] = ASEBA_AVAILABLE_PAGES; // page count
     aseba_can_send(msg, 4);
 }
