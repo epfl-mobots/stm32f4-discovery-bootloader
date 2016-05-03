@@ -2,6 +2,5 @@ bootloader:
   image: antoinealb/gcc-arm-embedded
   script:
     - git submodule update --init
-    - cd aseba-bootloader
     - pushd libopencm3 && make && popd
     - make
