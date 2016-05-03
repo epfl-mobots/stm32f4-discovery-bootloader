@@ -46,6 +46,7 @@ CSRC  = aseba_bootloader.c
 CSRC += aseba_can.c
 CSRC += aseba_flash.c
 CSRC += uart.c
+CSRC += timeout_timer.c
 
 ASMSRC = run_app.s
 

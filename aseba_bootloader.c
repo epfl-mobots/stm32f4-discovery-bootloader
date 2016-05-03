@@ -4,6 +4,7 @@
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/cm3/scb.h>
 #include "aseba_can.h"
+#include "timeout_timer.h"
 #include "aseba_flash.h"
 #include "uart.h"
 #include "config.h"
@@ -161,6 +162,10 @@ int main(void)
     check_run_application(); // boot app before any peripheral initialization
     rcc_clock_setup_hse_3v3(&hse_8mhz_3v3[CLOCK_3V3_168MHZ]);
 
+    bool should_timeout = true;
+
+    timeout_timer_init(F_CPU, TIMEOUT_S * 1000);
+
     uart_init(115200);
     uart_puts("ASEBA bootloader started\n");
 
@@ -178,9 +183,18 @@ int main(void)
             if (msg[1] == ASEBA_ID) {
                 // uart_puts("ASEBA ID match\n");
                 aseba_cmd_exec(&ctx, msg[0], &msg[2], msg_size-2);
+                should_timeout = false;
             } else {
                 // uart_puts("(not my id)\n");
             }
         }
+
+        if (should_timeout && timeout_reached()) {
+            break;
+        }
     }
+
+    reboot_to_application();
+
+    return 0;
 }
