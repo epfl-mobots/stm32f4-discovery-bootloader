@@ -41,14 +41,7 @@ LDFLAGS	+= -L./libopencm3/lib
 LDFLAGS	+= -L./CMSIS/lib/
 LDFLAGS	+= -lopencm3_stm32f4
 
-# C source files
-CSRC  = aseba_bootloader.c
-CSRC += aseba_can.c
-CSRC += aseba_flash.c
-CSRC += uart.c
-CSRC += timeout_timer.c
-
-ASMSRC = run_app.s
+include src.mk
 
 OBJS = $(CSRC:.c=.o) $(ASMSRC:.s=.o) $(CXXSRC:.cpp=.o)
 

@@ -33,3 +33,6 @@
 # Debug files
 *.dSYM/
 *.size.txt
+
+# Packager file
+src.mk

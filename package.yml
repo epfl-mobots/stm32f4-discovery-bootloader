@@ -1,0 +1,10 @@
+target.arm:
+    - aseba_can.c
+    - aseba_flash.c
+    - aseba_bootloader.c
+    - timeout_timer.c
+    - uart.c
+    - run_app.s
+
+templates:
+    src.mk.jinja: src.mk
