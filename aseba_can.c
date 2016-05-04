@@ -50,9 +50,9 @@ void aseba_can_init(void)
 }
 
 
-int aseba_can_send(const uint16_t *msg, int len)
+int aseba_can_send(const uint16_t *msg, int len, int id)
 {
-    if (can_transmit(CAN1, ASEBA_ID | ASEBA_TYPE_SMALL_PACKET, false, false, len*2, (uint8_t*)msg) >= 0) {
+    if (can_transmit(CAN1, id | ASEBA_TYPE_SMALL_PACKET, false, false, len*2, (uint8_t*)msg) >= 0) {
         // uart_puts("x");
         return 0;
     } else {

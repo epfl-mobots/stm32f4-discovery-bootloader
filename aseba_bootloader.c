@@ -30,6 +30,7 @@ typedef struct {
     bool programming_mode;
     int current_page;
     int current_word_in_page;
+    int id;
 } aseba_bootloader_context_t;
 
 
@@ -56,24 +57,25 @@ void reboot_to_application(void)
 }
 
 
-void aseba_bootloader_context_init(aseba_bootloader_context_t *ctx)
+void aseba_bootloader_context_init(aseba_bootloader_context_t *ctx, int id)
 {
     ctx->programming_mode = false;
     ctx->current_page = 0;
     ctx->current_word_in_page = 0;
+    ctx->id = id;
 }
 
 
-void aseba_reply(uint16_t error_code)
+void aseba_reply(uint16_t error_code, int id)
 {
     uint16_t msg[2];
     msg[0] = ASEBA_PUSH_ACK;
     msg[1] = error_code;
-    aseba_can_send(msg, 2);
+    aseba_can_send(msg, 2, id);
 }
 
 
-void send_page(uint16_t page_nbr)
+void send_page(uint16_t page_nbr, int id)
 {
     uint16_t msg[3];
     msg[0] = ASEBA_PUSH_PAGE_DATA;
@@ -81,7 +83,7 @@ void send_page(uint16_t page_nbr)
     for (word = 0; word < ASEBA_PAGE_SIZE_IN_WORDS; word+=2) {
         msg[1] = aseba_flash_read_word(page_nbr, word);
         msg[2] = aseba_flash_read_word(page_nbr, word+1);
-        aseba_can_send(msg, 3);
+        aseba_can_send(msg, 3, id);
     }
 }
 
@@ -90,44 +92,44 @@ int aseba_cmd_exec(aseba_bootloader_context_t *ctx, uint16_t cmd, uint16_t *payl
 {
     switch (cmd) {
     case ASEBA_CMD_RESET:
-        aseba_reply(ASEBA_REPLY_OK);
+        aseba_reply(ASEBA_REPLY_OK, ctx->id);
         uart_puts("jumping to application\n");
         reboot_to_application();
         break;
     case ASEBA_CMD_READ_PAGE:
         // uart_puts("command read page\n");
         if (len != 1) {
-            aseba_reply(ASEBA_REPLY_INVALID_SIZE);
+            aseba_reply(ASEBA_REPLY_INVALID_SIZE, ctx->id);
             return -1;
         }
-        send_page(payload[0]);
+        send_page(payload[0], ctx->id);
         break;
     case ASEBA_CMD_WRITE_PAGE:
         uart_puts("command write page\n");
         if (len != 1) {
-            aseba_reply(ASEBA_REPLY_INVALID_SIZE);
+            aseba_reply(ASEBA_REPLY_INVALID_SIZE, ctx->id);
             return -1;
         }
         int page_nbr = payload[0] - ASEBA_FIRST_PAGE;
 
         if (page_nbr > ASEBA_AVAILABLE_PAGES) {
-            aseba_reply(ASEBA_REPLY_INVALID_VALUE);
+            aseba_reply(ASEBA_REPLY_INVALID_VALUE, ctx->id);
             return -1;
         }
         ctx->programming_mode = true;
         ctx->current_page = page_nbr;
         ctx->current_word_in_page = 0;
         aseba_flash_erase_page(page_nbr);
-        aseba_reply(ASEBA_REPLY_OK);
+        aseba_reply(ASEBA_REPLY_OK, ctx->id);
         break;
     case ASEBA_CMD_PAGE_DATA:
         // uart_puts("command page data\n");
         if (len != 2) {
-            aseba_reply(ASEBA_REPLY_INVALID_SIZE);
+            aseba_reply(ASEBA_REPLY_INVALID_SIZE, ctx->id);
             return -1;
         }
         if (!ctx->programming_mode) {
-            aseba_reply(ASEBA_REPLY_NOT_PROGRAMMING);
+            aseba_reply(ASEBA_REPLY_NOT_PROGRAMMING, ctx->id);
             return -1;
         }
         aseba_page_buffer[ctx->current_word_in_page++] = payload[0];
@@ -135,7 +137,7 @@ int aseba_cmd_exec(aseba_bootloader_context_t *ctx, uint16_t cmd, uint16_t *payl
         if (ctx->current_word_in_page == ASEBA_PAGE_SIZE_IN_WORDS) {
             uart_puts("full page received\n");
             aseba_flash_write_page(ctx->current_page, aseba_page_buffer);
-            aseba_reply(ASEBA_REPLY_OK);
+            aseba_reply(ASEBA_REPLY_OK, ctx->id);
         }
         break;
     default:
@@ -146,14 +148,14 @@ int aseba_cmd_exec(aseba_bootloader_context_t *ctx, uint16_t cmd, uint16_t *payl
 }
 
 
-void aseba_send_descr(void)
+void aseba_send_descr(int id)
 {
     uint16_t msg[4];
     msg[0] = ASEBA_PUSH_DESCRIPTION;
     msg[1] = ASEBA_PAGE_SIZE; // page size
     msg[2] = ASEBA_FIRST_PAGE; // page start
     msg[3] = ASEBA_AVAILABLE_PAGES; // page count
-    aseba_can_send(msg, 4);
+    aseba_can_send(msg, 4, id);
 }
 
 
@@ -170,17 +172,18 @@ int main(void)
     uart_puts("ASEBA bootloader started\n");
 
     aseba_can_init();
-    aseba_send_descr();
 
     aseba_bootloader_context_t ctx;
-    aseba_bootloader_context_init(&ctx);
+    aseba_bootloader_context_init(&ctx, 42);
+
+    aseba_send_descr(ctx.id);
 
     uint16_t msg[4];
     while (1) {
         int msg_size = aseba_can_receive(msg);
         if (msg_size >= 2) {
             // uart_puts("ASEBA frame received.\n");
-            if (msg[1] == ASEBA_ID) {
+            if (msg[1] == ctx.id) {
                 // uart_puts("ASEBA ID match\n");
                 aseba_cmd_exec(&ctx, msg[0], &msg[2], msg_size-2);
                 should_timeout = false;
