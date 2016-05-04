@@ -1,3 +1,10 @@
+depends:
+    - parameter
+    - crc
+
+include_directories:
+    - .
+
 target.arm:
     - aseba_can.c
     - aseba_flash.c

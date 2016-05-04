@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 #include <libopencm3/stm32/rcc.h>
 #include <libopencm3/stm32/gpio.h>
 #include <libopencm3/cm3/scb.h>
@@ -8,6 +9,9 @@
 #include "aseba_flash.h"
 #include "uart.h"
 #include "config.h"
+#include "parameter/parameter.h"
+#include "parameter/parameter_msgpack.h"
+#include "crc/crc32.h"
 
 
 #define ASEBA_CMD_RESET         0x8000 // ask the bootloader to reset
@@ -158,6 +162,51 @@ void aseba_send_descr(int id)
     aseba_can_send(msg, 4, id);
 }
 
+bool config_load(parameter_namespace_t *ns, void *src, size_t src_len)
+{
+    size_t offset = sizeof(uint32_t);
+    uint32_t crc, expected_crc;
+    int res;
+
+    /* Compare checksum of the data block with header. */
+    memcpy(&expected_crc, src, sizeof(expected_crc));
+    crc = crc32(0, src + offset, src_len - offset);
+
+    if (crc != expected_crc) {
+        return false;
+    }
+
+    res = parameter_msgpack_read(ns, src + offset, src_len - offset,
+                                 NULL, NULL);
+
+    if (res != 0) {
+        return false;
+    }
+
+    return true;
+}
+
+
+int get_id_from_flash(void)
+{
+    extern int _config_start, _config_end;
+    parameter_namespace_t root, aseba;
+    parameter_t id;
+    size_t len;
+
+    /* Creates a minimal parameter tree containing only /aseba/id. */
+    parameter_namespace_declare(&root, NULL, NULL);
+    parameter_namespace_declare(&aseba, &root, "aseba");
+    parameter_integer_declare_with_default(&id, &aseba, "id", 42);
+
+    /* Load it from flash. */
+    len = &_config_end - &_config_start;
+    config_load(&root, &_config_start, len);
+
+    /* Returns loaded value (which will be the default if the tree wasn't
+     * loaded properly. */
+    return parameter_integer_get(&id);
+}
 
 int main(void)
 {
@@ -174,7 +223,7 @@ int main(void)
     aseba_can_init();
 
     aseba_bootloader_context_t ctx;
-    aseba_bootloader_context_init(&ctx, 42);
+    aseba_bootloader_context_init(&ctx, get_id_from_flash());
 
     aseba_send_descr(ctx.id);
 

@@ -5,8 +5,12 @@
 MEMORY
 {
     FLASH (RX)     : ORIGIN = 0x08000000, LENGTH = 64K /* only use first 4 sectors */
+    CONFIG         : ORIGIN = 0x080e0000, LENGTH = 128K
     RAM   (RWXAIL) : ORIGIN = 0x20000000, LENGTH = 128K
 }
+
+_config_start = ORIGIN(CONFIG);
+_config_end = ORIGIN(CONFIG) + LENGTH(CONFIG);
 
 REGION_ALIAS("REGION_TEXT",   FLASH);
 REGION_ALIAS("REGION_RODATA", FLASH);
@@ -154,6 +158,9 @@ SECTIONS
     _eheap = _eram;
     _estack = _eram;
     _stack = _eram;
+
+    /* Needed for newlib's malloc. */
+    end = _sheap;
 
     /*
      * Debugging sections
