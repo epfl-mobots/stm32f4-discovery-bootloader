@@ -1,6 +1,8 @@
 bootloader:
   image: antoinealb/gcc-arm-embedded
   script:
+    - apt-get update && apt-get install -y python3-pip
+    - pip3 install cvra-packager==1.0.0
     - git submodule update --init
     - pushd libopencm3 && make && popd
     - make
