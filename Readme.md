@@ -29,11 +29,9 @@ cd ..
 
 And finally to build the bootlaoder:
 ```
+packager
 make
 ```
-
-Note: You might want to edit the aseba node id defined in config.h before building
-the bootloader.
 
 ## Flashing
 
