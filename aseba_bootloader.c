@@ -197,7 +197,7 @@ int get_id_from_flash(void)
     /* Creates a minimal parameter tree containing only /aseba/id. */
     parameter_namespace_declare(&root, NULL, NULL);
     parameter_namespace_declare(&aseba, &root, "aseba");
-    parameter_integer_declare_with_default(&id, &aseba, "id", 42);
+    parameter_integer_declare_with_default(&id, &aseba, "id", DEFAULT_NODE_ID);
 
     /* Load it from flash. */
     len = &_config_end - &_config_start;
