@@ -10,6 +10,8 @@ This project requires the following tools:
 * A C / C++ compiler for the host (only required for unit tests)
 * [Packager](packager), which is a tool to generate makefiles with dependencies.
     Once you installed Python 3, it can be installed by running `pip3 install cvra-packager`.
+* A version of the application compiled for use by the bootloader.
+    See the documentation of the Aseba port on Discovery board for details.
 
 
 ## Building
